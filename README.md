@@ -1,4 +1,4 @@
-# Project Title
+# Story Generator
 
 ## Setup
 1. Get API key from [Google AI Studio](https://aistudio.google.com/app/api-keys)
