@@ -23,3 +23,5 @@
 hs_err_pid*
 replay_pid*
 
+# Config files
+src/main/java/config/
