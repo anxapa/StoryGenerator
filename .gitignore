@@ -25,3 +25,6 @@ replay_pid*
 
 # Config files
 src/main/java/config/
+
+# Save files
+src/main/resources/saves/
