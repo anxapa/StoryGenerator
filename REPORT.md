@@ -19,11 +19,17 @@ us customize the error messages we can send to specify to the user what is curre
 Learned: Error handling can be handled via sending the error messages to the appropriate layer to handle it the most effectively.
 
 ## Design Pattern Justifications
-**Strategy Pattern:** Needed different AI behaviors (still in-progress)
+**Strategy Pattern:** Needed different types of story prompt generators - now implemented with 3 types (`NarrativeStrategy.java`, `ScreenplayStrategy.java`, and `PoemStrategy.java`).
 
-**Singleton Pattern:** Needed global save and load handler object accross the different classes.
+**Singleton Pattern:** Needed global save and load handler object accross the different classes (`SaveLoadHandler.java`).
 
-**Observer Pattern:** Needed a way to make UI respond to actions made by the user effectively.
+**Observer Pattern:** Needed a way to make UI respond to actions made by the user effectively (`StoryGeneratorGUI.java`).
+
+## OOP Four Pillars
+**Encapsulation**: Encapsulated fields of many classes in the project to prevent unintentional leakage and modification of sensitive fields. (e.g. `Story.java`)
+**Inheritance**: This was not properly used in the project, but the main GUI code was extended from `JFrame` (`StoryGeneratorGUI.java`).
+**Polymorphism**: Polymorphism was used extensively with the interface `PromptStrategy.java` and the implemented classes `NarrativeStrategy.java`, `ScreenplayStrategy.java`, and `PoemStrategy.java` whenever the generation engine object made from `GenerationEngine.java` was used.
+**Abstraction**: `PromptStrategy.java` interface was used and hid the implementation details of the implemented classes.
 
 ## AI Usage (BE HONEST!)
 Used provided Claude example in Canvas
