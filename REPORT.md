@@ -21,9 +21,9 @@ Learned: Error handling can be handled via sending the error messages to the app
 ## Design Pattern Justifications
 **Strategy Pattern:** Needed different AI behaviors (still in-progress)
 
-**Singleton Pattern:** Needed global save and load handler object accross the differnet classes.
+**Singleton Pattern:** Needed global save and load handler object accross the different classes.
 
-**
+**Observer Pattern:** Needed a way to make UI respond to actions made by the user effectively.
 
 ## AI Usage (BE HONEST!)
 Used provided Claude example in Canvas
