@@ -12,11 +12,12 @@ public class ScreenplayStrategy implements PromptStrategy{
                 return String.format("Create a simple screenplay story with basic, everyday vocabulary with around" +
                         " %d words with the prompt: \"%s\".", wordCount, prompt);
             case 2:
-                return String.format("Create a complex screenplay story with higher-frequency, academic vocabulary" +
+                return String.format("Create a screenplay story with academic vocabulary, and meaningful dialogue" +
                         " with around %d words with the prompt: \"%s\".", wordCount, prompt);
             case 3:
-                return String.format("Create a complex narrative story with some low-frequency, " +
-                        "context-specific vocabulary of around %d words with the prompt: \"%s\".", wordCount, prompt);
+                return String.format("Create a complex narrative story with academic context-specific vocabulary " +
+                        "and meaningful interactions and events between characters of around %d words with the " +
+                        "prompt: \"%s\".", wordCount, prompt);
             default:
                 System.err.println("Quality invalid: " + complexity);
         }

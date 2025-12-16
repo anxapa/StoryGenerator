@@ -12,10 +12,10 @@ public class PoemStrategy implements PromptStrategy{
                 return String.format("Create a simple poem story with basic, everyday vocabulary with around" +
                         " %d words with the prompt: \"%s\".", wordCount, prompt);
             case 2:
-                return String.format("Create a complex poem story with some rhyming as well as an academic vocabulary" +
+                return String.format("Create a poem story with some rhyming as well as an academic vocabulary" +
                         " with around %d words with the prompt: \"%s\".", wordCount, prompt);
             case 3:
-                return String.format("Create a complex poem story with fully rhyming, with some low-frequency, " +
+                return String.format("Create a complex poem story with many rhymes, with some low-frequency, " +
                         "context-specific vocabulary of around %d words with the prompt: \"%s\".", wordCount, prompt);
             default:
                 System.err.println("Quality invalid: " + complexity);
