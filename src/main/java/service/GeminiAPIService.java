@@ -1,48 +1,43 @@
 package service;
 
 import com.google.genai.Client;
+import com.google.genai.errors.ApiException;
 import com.google.genai.types.*;
 import config.Config;
 import model.Story;
-import model.StoryCharacter;
-import org.json.JSONObject;
 
 public class GeminiAPIService {
     private final Client client;
     private final Schema storySchema;
+    private String currentModel = availableModels[1];
+
+    public final static String[] availableModels = {
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-pro",
+            "gemini-3-pro-preview",
+    };
 
     public GeminiAPIService() {
-        client = Client.builder().apiKey(Config.GEMINI_API_KEY).build();
+        client = Client.builder().apiKey(Config.getGeminiApiKey()).build();
         storySchema = Story.generateSchema();
     }
 
     /**
-     * Checks for the connection with Gemini API.
-     * @return true if authentication is successful, else false
+     * Sets the current model to the given one.
+     * @param currentModel - name of model
      */
-    public boolean authenticate() {
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        "gemini-2.5-flash-lite",
-                        "Please reply with just \"yes\". No other words should be included.",
-                        null);
-
-        return response.text().equals("yes");
+    public void setCurrentModel(String currentModel) {
+        this.currentModel = currentModel;
     }
 
     /**
-     * Sends a request to Gemini.
+     * Requests a standard call to Gemini.
      * @param prompt - prompt to generate with
      * @return response text
      */
     public String call(String prompt) {
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        "gemini-2.5-flash-lite",
-                        prompt,
-                        null);
-
-        return response.text() + "\nEND\n";
+        return sendRequest(currentModel, prompt, null);
     }
 
     /**
@@ -57,23 +52,31 @@ public class GeminiAPIService {
                         .responseSchema(storySchema)
                         .build();
 
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        "gemini-2.5-flash-lite",
-                        String.format("Extract the story: %s", story),
-                        config);
-
-        return response.text() + "\nEND\n";
+        return sendRequest("gemini-2.5-flash-lite", story, config);
     }
 
-    public static void main(String[] args) {
-        GeminiAPIService geminiAPI = new GeminiAPIService();
-        String response = geminiAPI.call("Generate a JSON for a character with the values: 'name', 'gender'" +
-                        ", 'age', 'species', 'race', 'description'. The description should just be a short description with no reference" +
-                        "to the values of the JSON. There should be no other response other than the JSON. Please remove the backticks" +
-                        ", newlines, and spaces for the JSON.");
-        System.out.println(response);
-        StoryCharacter character = StoryCharacter.fromJSON(new JSONObject(response));
-        System.out.println(character);
+    /**
+     * Sends the request to Gemini.
+     * @param model - Gemini model to use
+     * @param prompt - text prompt
+     * @param config - GenerateContentConfig
+     * @return response
+     */
+    private String sendRequest(String model, String prompt, GenerateContentConfig config) {
+        String responseText;
+
+        try {
+            GenerateContentResponse response =
+                    client.models.generateContent(
+                            model,
+                            prompt,
+                            config);
+
+            responseText = response.text();
+        } catch (ApiException e) {
+            responseText = "!ERROR: " + e.getMessage();
+        }
+
+        return responseText;
     }
 }

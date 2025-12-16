@@ -16,6 +16,7 @@ public class StoryGeneratorServer {
     private volatile boolean running;
 
     public StoryGeneratorServer(int port) {
+        Config.load();
         this.port = port;
         this.geminiAPI = new GeminiAPIService();
         this.threadPool = Executors.newFixedThreadPool(10);
@@ -27,14 +28,9 @@ public class StoryGeneratorServer {
      * @throws IOException
      */
     public void start() throws IOException {
-        // Authenticate with Gemini API
-        System.out.println("Authenticating with Gemini API...");
-        if (geminiAPI.authenticate()) {
-            System.out.println("Successfully authenticated with Gemini API");
-        }
-        else {
-            System.err.println("Error in authenticating with Gemini API");
-            shutdown();
+        // If cannot authenticate with APIs, then shutdown.
+        if (!authenticateAPI()) {
+            return;
         }
 
         running = true;
@@ -61,13 +57,28 @@ public class StoryGeneratorServer {
     }
 
     /**
+     * Checks if the server can authenticate with the APIs.
+     * @return true if authentication is successful, else false.
+     */
+    public boolean authenticateAPI() {
+        String response = geminiAPI.call("Please reply with just \"yes\". No other words should be included.");
+        if (response.equals("yes")) {
+            System.out.println("Successfully authenticated with Gemini API");
+            return true;
+        }
+        else {
+            System.err.println("Error in authenticating with Gemini API: " + response);
+            return false;
+        }
+    }
+
+    /**
      * Turns off the server.
      */
     public void shutdown() {
         running = false;
         threadPool.shutdown();
 
-        // TODO: Close APIs here
         System.out.println("Server shutdown complete");
     }
 
@@ -77,18 +88,6 @@ public class StoryGeneratorServer {
      */
     public boolean testRun() throws IOException {
         boolean canRun;
-
-        // Authenticate with Gemini API
-        System.out.println("Authenticating with Gemini API...");
-        if (geminiAPI.authenticate()) {
-            System.out.println("Successfully authenticated with Gemini API");
-        }
-        else {
-            System.err.println("Error in authenticating with Gemini API");
-            shutdown();
-        }
-
-        running = true;
 
         // Create server socket and listen for client connections
         try (ServerSocket serverSocket = new ServerSocket(port)) {
@@ -113,7 +112,8 @@ public class StoryGeneratorServer {
     }
 
     public static void main(String[] args) {
-        StoryGeneratorServer server = new StoryGeneratorServer(Config.SERVER_PORT);
+        Config.load();
+        StoryGeneratorServer server = new StoryGeneratorServer(Config.getServerPort());
 
         // Add shutdown hook for graceful termination
         Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown));

@@ -6,6 +6,7 @@ import model.StoryCharacter;
 import model.StoryLocation;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import service.GeminiAPIService;
 
@@ -17,13 +18,20 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GenerationTest {
+
+    @BeforeAll
+    static void setup() {
+        Config.load();
+    }
+
     /**
      * Tests if the connection with Gemini API is working
      */
     @Test
     void authenticateGeminiAPI() {
         GeminiAPIService api = new GeminiAPIService();
-        assertTrue(api.authenticate());
+        String response = api.call("Please reply with just \"yes\". No other words should be included.");
+        assertEquals("yes", response);
     }
 
     /**
@@ -31,7 +39,7 @@ public class GenerationTest {
      */
     @Test
     void canServerRun() {
-        StoryGeneratorServer server = new StoryGeneratorServer(Config.SERVER_PORT);
+        StoryGeneratorServer server = new StoryGeneratorServer(Config.getServerPort());
         boolean canRun = false;
         try {
             canRun = server.testRun();
@@ -190,7 +198,7 @@ public class GenerationTest {
 
         // Check if file exists
         // If yes, then increment i to keep finding for a name not used by a file.
-        if ((file = new File(Config.PATH_TO_SAVE_FILE + "/" + name + i + ".json")).isFile()) {
+        if ((file = new File(Config.getPathToSaveFile() + "/" + name + i + ".json")).isFile()) {
             i++;
         }
 
@@ -217,7 +225,7 @@ public class GenerationTest {
 
         // Check if file exists
         // If yes, then increment i to keep finding for a name not used by a file.
-        if ((file = new File(Config.PATH_TO_SAVE_FILE + "/" + name + i + ".json")).isFile()) {
+        if ((file = new File(Config.getPathToSaveFile() + "/" + name + i + ".json")).isFile()) {
             i++;
         }
 

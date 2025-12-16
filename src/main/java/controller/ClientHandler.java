@@ -49,12 +49,13 @@ public class ClientHandler implements Runnable{
     private String handleRequest(String request) {
         JSONObject requestJSON = new JSONObject(request);
         String prompt = requestJSON.getString("prompt");
+        geminiAPI.setCurrentModel(requestJSON.getString("model"));
         switch (requestJSON.getString("action")) {
             case "CREATE_STORY" -> {
-                return generateStory(prompt);
+                return generateStory(prompt) + "\nEND\n";
             }
             case "EXTRACT_STORY" -> {
-                return extractStory(prompt);
+                return extractStory(prompt) + "\nEND\n";
             }
             default -> {
                 return null;

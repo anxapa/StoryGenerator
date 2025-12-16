@@ -1,0 +1,4 @@
+GEMINI_API_KEY=<insert key here>
+SERVER_PORT=8888
+SERVER_HOST=localhost
+PATH_TO_SAVE_FILE=src/main/resources/saves
