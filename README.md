@@ -13,7 +13,8 @@ PATH_TO_SAVE_FILE=src/main/resources/saves
 3. Run `StoryGenerator.java` (for the server) and `StoryGeneratorGUI.java` (for the client)
 
 ## Features
-- [x] Extract features (such as characters and locations) from the story generated.
+- [x] Create stories of different types - narratives, screenplays, and poems
+- [x] Extract features (such as characters and locations) from the story generated 
 - [x] Different options for the story generated
 - [x] Error handling 
 - [x] Save/load sessions
