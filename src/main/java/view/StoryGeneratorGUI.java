@@ -1,11 +1,13 @@
 package view;
 
-import controller.GenerationEngine;
-import controller.NarrativeStrategy;
-import controller.SaveLoadHandler;
-import controller.ServerConnection;
+import config.Config;
+import controller.*;
 import model.Story;
 import org.json.JSONObject;
+import service.GeminiAPIService;
+import strategy.NarrativeStrategy;
+import strategy.PoemStrategy;
+import strategy.ScreenplayStrategy;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -24,19 +26,28 @@ public class StoryGeneratorGUI extends JFrame {
     private JButton promptButton;
     private JTextArea textArea;
     private JLabel statusLabel;
+    private JSlider wordCountSlider;
+    private JComboBox<String> modelBox;
+    private JComboBox<String> complexityBox;
+    private JComboBox<String> storyTypeBox;
 
     // Tree
     private JTree storyTree;
     private DefaultTreeModel treeModel;
     private DefaultMutableTreeNode topTreeNode;
 
+    // Engine
+    private GenerationEngine engine = new GenerationEngine(new NarrativeStrategy());
+
     // Connection
-    ServerConnection serverConnection;
+    private ServerConnection serverConnection;
+    private boolean isConnected;
 
     // File handling
-    SaveLoadHandler saveLoadHandler;
+    private final SaveLoadHandler saveLoadHandler;
 
     public StoryGeneratorGUI() {
+        Config.load();
         saveLoadHandler = SaveLoadHandler.getInstance();
         initializeGUI();
         initializeConnection();
@@ -47,7 +58,7 @@ public class StoryGeneratorGUI extends JFrame {
      */
     private void initializeGUI() {
         setTitle("Story Generator");
-        setSize(1200, 800);
+        setSize(1400, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -55,18 +66,19 @@ public class StoryGeneratorGUI extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Bottom Panel - Prompt Section (with Status Label)
-        JPanel bottomPanel = createPromptPanel();
-        bottomPanel.add(createStatusPanel(), BorderLayout.SOUTH);
-
         // Center Panel - Text Section
         JPanel centerPanel = createTextPanel();
+
+        // Bottom Panel - Prompt Section (with Status Label)
+        JPanel statusPanel = createStatusPanel();
+        JPanel bottomPanel = createPromptPanel();
+        bottomPanel.add(statusPanel, BorderLayout.SOUTH);
 
         // Left Panel - Story Tree Section
         JPanel leftPanel = createStoryTreePanel();
 
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         mainPanel.add(leftPanel, BorderLayout.WEST);
         add(mainPanel);
 
@@ -84,48 +96,22 @@ public class StoryGeneratorGUI extends JFrame {
      */
     private void initializeConnection() {
         serverConnection = new ServerConnection();
-        try {
-            serverConnection.connect();
-            updateStatus("Connected to server");
-        } catch (IOException e) {
-//            showError("Failed to connect to server: " + e.getMessage());
-            updateStatus("Not connected");
-        }
+        connectServer();
     }
 
     /**
-     * Creates the prompt panel with text field and button.
-     * @return JPanel - prompt panel
+     * Attempts to connect to the server.
      */
-    private JPanel createPromptPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Generate Story"));
-
-        promptField = new JTextField();
-        promptField.setFont(new Font("Arial", Font.PLAIN, 14));
-        promptField.addActionListener(e -> {
-            try {
-                generateStory();
-            } catch (IOException ex) {
-                // TODO: Add error show function call here
-            }
-        });
-
-        promptButton = new JButton("Prompt");
-        promptButton.setFont(new Font("Arial", Font.BOLD, 14));
-        promptButton.addActionListener(e -> {
-            try {
-                generateStory();
-            } catch (IOException ex) {
-                // TODO: Add error show function call here
-            }
-        });
-
-        panel.add(new JLabel("Prompt Query: "), BorderLayout.WEST);
-        panel.add(promptField, BorderLayout.CENTER);
-        panel.add(promptButton, BorderLayout.EAST);
-
-        return panel;
+    private void connectServer() {
+        try {
+            serverConnection.connect();
+            updateStatus("Connected to server");
+            isConnected = true;
+        } catch (IOException e) {
+            showError("Failed to connect to server: " + e.getMessage());
+            updateStatus("Not connected");
+            isConnected = false;
+        }
     }
 
     /**
@@ -141,6 +127,185 @@ public class StoryGeneratorGUI extends JFrame {
         return panel;
     }
 
+    /**
+     * Creates the prompt panel with text field and button.
+     * @return JPanel - prompt panel
+     */
+    private JPanel createPromptPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createTitledBorder("Generate Story"));
+
+        // Prompt field
+        promptField = new JTextField();
+        promptField.setFont(new Font("Arial", Font.PLAIN, 14));
+        promptField.addActionListener(e -> {
+            try {
+                generateStory();
+            } catch (IOException ex) {
+                // TODO: Add error show function call here
+            }
+        });
+
+        // Prompt button
+        promptButton = new JButton("Prompt");
+        promptButton.setFont(new Font("Arial", Font.BOLD, 14));
+        promptButton.addActionListener(e -> {
+            try {
+                generateStory();
+            } catch (IOException ex) {
+
+            }
+        });
+
+        // Story Settings Panel
+        JPanel settingsPanel = createSettingsPanel();
+
+        panel.add(new JLabel("Prompt Query: "), BorderLayout.WEST);
+        panel.add(promptField, BorderLayout.CENTER);
+        panel.add(promptButton, BorderLayout.EAST);
+        panel.add(settingsPanel, BorderLayout.NORTH);
+
+        return panel;
+    }
+
+    /**
+     * Creates a panel with all the settings needed for the story.
+     * @return JPanel
+     */
+    private JPanel createSettingsPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+
+        // COMPONENTS
+        // Word Count Slider
+        panel.add(createWCSliderPanel());
+        panel.add(Box.createRigidArea(new Dimension(50, 0)));
+
+        // Model Combo Box
+        panel.add(createModelBoxPanel());
+        panel.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        // Complexity Combo Box
+        panel.add(createComplexityBoxPanel());
+        panel.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        // Strategy Combo Box
+        panel.add(createStoryTypeBoxPanel());
+
+        return panel;
+    }
+
+    /**
+     * Creates a panel with the word count slider.
+     * @return JPanel
+     */
+    private JPanel createWCSliderPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        wordCountSlider = new JSlider(500, 3000, 1000);
+        panel.add(new JLabel("Word Count: "), BorderLayout.WEST);
+        panel.add(wordCountSlider, BorderLayout.CENTER);
+
+        // Turn on labels at major tick marks
+        wordCountSlider.setMajorTickSpacing(200);
+        wordCountSlider.setMinorTickSpacing(50);
+        wordCountSlider.setPaintTicks(true);
+        wordCountSlider.setPaintLabels(true);
+
+        return panel;
+    }
+
+    /**
+     * Creates a panel with a combo box that lets you choose different Gemini models to use.
+     * @return JPanel
+     */
+    private JPanel createModelBoxPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+
+        modelBox = new JComboBox<>(GeminiAPIService.availableModels);
+        panel.add(new JLabel("Model:"), BorderLayout.WEST);
+        panel.add(modelBox, BorderLayout.CENTER);
+
+        // Set it default to "gemini-2.5-flash-lite"
+        modelBox.setSelectedIndex(1);
+
+        return panel;
+    }
+
+    /**
+     * Creates a panel with a combo box that lets you choose different complexities to use.
+     * @return JPanel
+     */
+    private JPanel createComplexityBoxPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        complexityBox = new JComboBox<>(new String[]{"Low", "Medium", "High"});
+        panel.add(new JLabel("Complexity:"), BorderLayout.WEST);
+        panel.add(complexityBox, BorderLayout.CENTER);
+
+        // Make it change the engine's complexity if changed
+        complexityBox.addActionListener(e -> {
+            int complexity = complexityBox.getSelectedIndex() + 1;
+            engine.setComplexity(complexity);
+            updateStatus("Set complexity to " + complexity);
+        });
+
+        // Set it default to "low"
+        complexityBox.setSelectedIndex(0);
+        engine.setComplexity(complexityBox.getSelectedIndex() + 1);
+
+        return panel;
+    }
+
+    /**
+     * Creates a panel with a combo box that lets you choose different strategy (story types) to use.
+     * @return JPanel
+     */
+    private JPanel createStoryTypeBoxPanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        storyTypeBox = new JComboBox<>(new String[]{"Narrative", "Screenplay", "Poem"});
+        panel.add(new JLabel("Type:"), BorderLayout.WEST);
+        panel.add(storyTypeBox, BorderLayout.CENTER);
+
+        // Set it default to "Narrative"
+        storyTypeBox.setSelectedIndex(0);
+        changeStoryType((String) storyTypeBox.getSelectedItem());
+
+        // Set action to change story type
+        storyTypeBox.addActionListener(e -> {
+            String type = (String) storyTypeBox.getSelectedItem();
+            changeStoryType(type);
+            updateStatus("Changed story type to " + type);
+        });
+
+        return panel;
+    }
+
+    /**
+     * Changes the story type.
+     * @param type - a story type
+     */
+    private void changeStoryType(String type) {
+        switch(type) {
+            case "Narrative" ->
+                    engine.setStrategy(new NarrativeStrategy());
+            case "Screenplay" ->
+                    engine.setStrategy(new ScreenplayStrategy());
+            case "Poem" ->
+                    engine.setStrategy(new PoemStrategy());
+            default ->
+                    System.err.println("Invalid strategy set: " + type);
+        }
+
+        updateWordCountSlider();
+    }
+
+    /**
+     * Updates the word count values depending on the story type.
+     */
+    private void updateWordCountSlider() {
+        wordCountSlider.setMinimum(engine.getMinWordCount());
+        wordCountSlider.setMaximum(engine.getMaxWordCount());
+        wordCountSlider.setValue((wordCountSlider.getMaximum() + wordCountSlider.getMinimum()) / 2);
+    }
     /**
      * Create text panel that shows the text the user is currently viewing.
      * @return JPanel
@@ -235,26 +400,51 @@ public class StoryGeneratorGUI extends JFrame {
      */
     private void generateStory() throws IOException {
         final String[] prompt = {promptField.getText().trim()};
+
+        // Attempts to connect to the server if not connected
+        if (!isConnected) {
+            connectServer();
+            // If still not connected then do not do anything.
+            if (!isConnected) return;
+        }
+
+        // If the prompt is empty, then return an error message.
         if (prompt[0].isEmpty()) {
+            showError("Prompt cannot be empty.");
             return;
         }
 
         promptField.setText(null);
         changeText(null);
         promptButton.setEnabled(false);
-        updateStatus("Generating story... Please wait...");
+        updateStatus(String.format("Generating story with %s model... Please wait...", modelBox.getSelectedItem()));
 
         // Make the worker generate on another thread so the GUI does not have to freeze.
         SwingWorker<Story, Void> worker = new SwingWorker<Story, Void>() {
             @Override
             protected Story doInBackground() throws Exception {
-                GenerationEngine engine = new GenerationEngine(new NarrativeStrategy());
-                prompt[0] = engine.construct(prompt[0]);
-                String response = serverConnection.createStory(prompt[0]);
+                String model = (String) modelBox.getSelectedItem();
+                int wordCount = wordCountSlider.getValue();
+
+                // Create story
+                prompt[0] = engine.construct(prompt[0], wordCount);
+                String response = serverConnection.createStory(prompt[0], model);
+                // Check for errors
+                if (checkError(response)) {
+                    updateStatus("Error while generating the story.");
+                    return null;
+                }
 
                 // Extract story to JSON to Story Object
-                JSONObject storyJSON = serverConnection.extractJSONfromStory(response);
-                Story story = Story.fromJSON(storyJSON);
+                updateStatus("Extracting story...");
+                String storyJSON = serverConnection.extractJSONfromStory(response, model);
+                // Check for errors
+                if (checkError(response)) {
+                    updateStatus("Error while extracting the story.");
+                    return null;
+                }
+
+                Story story = Story.fromJSON(new JSONObject(storyJSON));
                 story.setStory(response);
 
                 return story;
@@ -263,12 +453,16 @@ public class StoryGeneratorGUI extends JFrame {
             @Override
             protected void done() {
                 Story story = null;
+
                 try {
                     story = get();
-                    saveLoadHandler.saveStory(story);
-                    addStoryToTree(story);
-                    changeText(String.format("STORY NAME: %s\n\n%s", story.getName(), story.getStory()));
-                    updateStatus("Generated the story.");
+
+                    if (story != null) {
+                        saveLoadHandler.saveStory(story);
+                        addStoryToTree(story);
+                        changeText(String.format("STORY NAME: %s\n\n%s", story.getName(), story.getStory()));
+                        updateStatus("Generated the story.");
+                    }
                 } catch (Exception e) {
                     updateStatus("Error in generating the story.");
                 } finally {
@@ -278,22 +472,6 @@ public class StoryGeneratorGUI extends JFrame {
         };
 
         worker.execute();
-    }
-
-    /**
-     * Clears the tree nodes within the tree (by making a new tree).
-     * @return the top node of the tree
-     */
-    private void clearTreeNodes() {
-        topTreeNode.removeAllChildren();
-    }
-
-    /**
-     * Public method to update the tree whenever there are new changes.
-     */
-    public void updateTree() {
-        clearTreeNodes();
-        createTreeNodes();
     }
 
     /**
@@ -364,6 +542,28 @@ public class StoryGeneratorGUI extends JFrame {
             }
         }
 
+    }
+
+    /**
+     * Checks if there are errors in the response text.
+     * @return true if there are errors, else false.
+     */
+    private boolean checkError(String response) {
+        String firstWord = response.split(" ")[0];
+        if (firstWord.equals("!ERROR:")) {
+            showError("Error: " + response.substring(8));
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Show error dialog.
+     */
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error",
+                JOptionPane.ERROR_MESSAGE);
     }
 
     /**

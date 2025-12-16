@@ -35,7 +35,7 @@ public class SaveLoadHandler {
         // Removes all stories from the dictionary
         storyDict.clear();
 
-        File dir = new File(Config.PATH_TO_SAVE_FILE);
+        File dir = new File(Config.getPathToSaveFile());
         for (File file : dir.listFiles()) {
             String rawText = "";
 
@@ -70,7 +70,7 @@ public class SaveLoadHandler {
 
         // Save to file
         try {
-            File file = new File(Config.PATH_TO_SAVE_FILE + "/" + story.getName() + ".json");
+            File file = new File(Config.getPathToSaveFile() + "/" + story.getName() + ".json");
 
             // If file doesn't exists, then create it
             if (!file.exists()) {

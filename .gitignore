@@ -24,7 +24,9 @@ hs_err_pid*
 replay_pid*
 
 # Config files
-src/main/java/config/
+src/main/resources/config.properties
 
 # Save files
 src/main/resources/saves/
+
+/target/

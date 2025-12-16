@@ -1,7 +1,6 @@
 package controller;
 
 import config.Config;
-import model.Story;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -16,30 +15,51 @@ public class ServerConnection {
     private BufferedReader in;
 
     public void connect() throws IOException {
-        socket = new Socket(Config.SERVER_HOST, Config.SERVER_PORT);
+        socket = new Socket(Config.getServerHost(), Config.getServerPort());
         out = new PrintWriter(socket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         System.out.println("Connected to a server.");
     }
 
-    // TODO: Add expected methods here
-    public String createStory(String prompt) throws IOException {
+    /**
+     * Requests the server to create a story with the given prompt and model.
+     * @param prompt prompt for the story
+     * @param model model to be used
+     * @return text format of created story
+     * @throws IOException
+     */
+    public String createStory(String prompt, String model) throws IOException {
         JSONObject request = new JSONObject();
         request.put("action", "CREATE_STORY");
         request.put("prompt", prompt);
+        request.put("model", model);
 
         return sendRequest(request);
     }
 
-    public JSONObject extractJSONfromStory(String storyText) throws IOException{
+    /**
+     * Requests the JSON format of the given story.
+     * @param storyText story to be extracted
+     * @param model model to be used
+     * @return JSON format of given story
+     * @throws IOException
+     */
+    public String extractJSONfromStory(String storyText, String model) throws IOException{
         JSONObject request = new JSONObject();
         request.put("action", "EXTRACT_STORY");
+        request.put("model", model);
         request.put("prompt", storyText);
 
         String response = sendRequest(request);
-        return new JSONObject(response);
+        return response;
     }
 
+    /**
+     * Send the request to the server.
+     * @param request text format of the request
+     * @return text format of the response
+     * @throws IOException
+     */
     public String sendRequest(JSONObject request) throws IOException {
         // Send request
         out.println(request.toString());
@@ -58,6 +78,9 @@ public class ServerConnection {
         return response;
     }
 
+    /**
+     * Disconnects from the server.
+     */
     public void disconnect() {
         try {
             if (in != null) in.close();
@@ -69,6 +92,10 @@ public class ServerConnection {
         }
     }
 
+    /**
+     * Checks if the connection is still connected to the server.
+     * @return true if still connected to server, else false.
+     */
     public boolean isConnected() {
         return socket != null && socket.isConnected() && !socket.isClosed();
     }
