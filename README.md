@@ -24,3 +24,4 @@ PATH_TO_SAVE_FILE=src/main/resources/saves
 - Observer: Swing UI elements react whenever an action is done (for example, when a button is clicked).
 
 ## Demo
+[Demo video](https://youtu.be/NjfyeM_EA68)
