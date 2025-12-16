@@ -27,8 +27,11 @@ Learned: Error handling can be handled via sending the error messages to the app
 
 ## OOP Four Pillars
 **Encapsulation**: Encapsulated fields of many classes in the project to prevent unintentional leakage and modification of sensitive fields. (e.g. `Story.java`)
+
 **Inheritance**: This was not properly used in the project, but the main GUI code was extended from `JFrame` (`StoryGeneratorGUI.java`).
+
 **Polymorphism**: Polymorphism was used extensively with the interface `PromptStrategy.java` and the implemented classes `NarrativeStrategy.java`, `ScreenplayStrategy.java`, and `PoemStrategy.java` whenever the generation engine object made from `GenerationEngine.java` was used.
+
 **Abstraction**: `PromptStrategy.java` interface was used and hid the implementation details of the implemented classes.
 
 ## AI Usage (BE HONEST!)
